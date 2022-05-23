@@ -20,7 +20,7 @@ be stored in a directory called "data":
 ```
 
 ### Run
-The experiments can be run via a command line, having
+The experiments can be run via a command line, passing
 the model and the data set as arguments. For example, the command to run the LeRac strategy on
 Resnet-18 for CIFAR-10, is the following:
 ```sh
