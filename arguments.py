@@ -5,9 +5,9 @@ import torch
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=str, default='./data')
-    parser.add_argument('--dataset', type=str, default='cifar10',
+    parser.add_argument('--dataset', type=str, default='imagenet',
                         choices=['cifar10', 'cifar100', 'tinyimagenet', 'boolq', 'qnli','rte'])
-    parser.add_argument('--model_name', type=str, default='resnet18',
+    parser.add_argument('--model_name', type=str, default='cvt',
                         choices=['resnet18', 'wresnet', 'cvt', 'cvt_pretrained', 'bert'])
 
     args = parser.parse_args()

@@ -1,6 +1,6 @@
 from functools import partial
 from itertools import repeat
-# from torch._six import container_abcs
+
 
 import logging
 import os
@@ -15,6 +15,8 @@ from einops import rearrange
 from einops.layers.torch import Rearrange
 
 from timm.models.layers import DropPath, trunc_normal_
+from torch import Tensor
+
 
 # From PyTorch internals
 def _ntuple(n):
@@ -36,14 +38,14 @@ to_ntuple = _ntuple
 class LayerNorm(nn.LayerNorm):
     """Subclass torch's LayerNorm to handle fp16."""
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor)->torch.Tensor:
         orig_type = x.dtype
         ret = super().forward(x.type(torch.float32))
         return ret.type(orig_type)
 
 
 class QuickGELU(nn.Module):
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor)->Tensor:
         return x * torch.sigmoid(1.702 * x)
 
 
@@ -62,7 +64,7 @@ class Mlp(nn.Module):
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
-    def forward(self, x):
+    def forward(self, x:Tensor)->Tensor:
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop(x)
@@ -156,7 +158,7 @@ class Attention(nn.Module):
 
         return proj
 
-    def forward_conv(self, x, h, w):
+    def forward_conv(self, x: Tensor, h: Tensor, w:Tensor)->Tensor:
         if self.with_cls_token:
             cls_token, x = torch.split(x, [1, h*w], 1)
 
@@ -184,7 +186,7 @@ class Attention(nn.Module):
 
         return q, k, v
 
-    def forward(self, x, h, w):
+    def forward(self, x:Tensor, h:Tensor, w:Tensor)->Tensor:
         if (
             self.conv_proj_q is not None
             or self.conv_proj_k is not None
@@ -319,7 +321,7 @@ class Block(nn.Module):
             drop=drop
         )
 
-    def forward(self, x, h, w):
+    def forward(self, x:Tensor, h:Tensor, w:Tensor)->Tensor:
         res = x
 
         x = self.norm1(x)
@@ -332,6 +334,7 @@ class Block(nn.Module):
 
 class ConvEmbed(nn.Module):
     """ Image to Conv Embedding
+
     """
 
     def __init__(self,
@@ -353,7 +356,7 @@ class ConvEmbed(nn.Module):
         )
         self.norm = norm_layer(embed_dim) if norm_layer else None
 
-    def forward(self, x):
+    def forward(self, x:Tensor)->Tensor:
         x = self.proj(x)
 
         B, C, H, W = x.shape
@@ -460,7 +463,7 @@ class VisionTransformer(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def forward(self, x):
+    def forward(self, x:Tensor)->Tensor:
         x = self.patch_embed(x)
         B, C, H, W = x.size()
 
@@ -486,11 +489,11 @@ class VisionTransformer(nn.Module):
 
 class ConvolutionalVisionTransformer(nn.Module):
     def __init__(self,
-                 in_chans=3,
-                 num_classes=1000,
-                 act_layer=nn.GELU,
-                 norm_layer=nn.LayerNorm,
-                 init='trunc_norm',
+                 in_chans:int =3,
+                 num_classes:int =1000,
+                 act_layer:nn.Module=nn.GELU,
+                 norm_layer:nn.Module =nn.LayerNorm,
+                 init:str='trunc_norm',
                  spec=None):
         super().__init__()
         self.num_classes = num_classes
@@ -550,7 +553,7 @@ class ConvolutionalVisionTransformer(nn.Module):
             for k, v in pretrained_dict.items():
                 need_init = (
                         k.split('.')[0] in pretrained_layers
-                        or pretrained_layers[0] is '*'
+                        or pretrained_layers[0] == '*'
                 )
                 if need_init:
                     if verbose:
@@ -598,7 +601,7 @@ class ConvolutionalVisionTransformer(nn.Module):
 
         return layers
 
-    def forward_features(self, x):
+    def forward_features(self, x:Tensor)->Tensor:
         for i in range(self.num_stages):
             x, cls_tokens = getattr(self, f'stage{i}')(x)
 
@@ -612,8 +615,29 @@ class ConvolutionalVisionTransformer(nn.Module):
 
         return x
 
-    def forward(self, x):
+    def forward(self, x: Tensor)->Tensor:
         x = self.forward_features(x)
         x = self.head(x)
 
         return x
+
+
+def get_cls_model(config, **kwargs):
+    msvit_spec = config.MODEL.SPEC
+    msvit = ConvolutionalVisionTransformer(
+        in_chans=3,
+        num_classes=config.MODEL.NUM_CLASSES,
+        act_layer=QuickGELU,
+        norm_layer=partial(LayerNorm, eps=1e-5),
+        init=getattr(msvit_spec, 'INIT', 'trunc_norm'),
+        spec=msvit_spec
+    )
+
+    if config.MODEL.INIT_WEIGHTS:
+        msvit.init_weights(
+            config.MODEL.PRETRAINED,
+            config.MODEL.PRETRAINED_LAYERS,
+            config.VERBOSE
+        )
+
+    return msvit

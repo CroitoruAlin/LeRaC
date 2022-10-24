@@ -2,15 +2,18 @@ import csv
 import os
 from abc import ABC
 
+import cv2
 import numpy as np
 import torch
 import torchvision
+from PIL import Image
+from bs4 import BeautifulSoup
 from torch import randperm, default_generator
 from torch.utils.data import Subset, DataLoader, Dataset, RandomSampler, SequentialSampler
 from torchvision.datasets.folder import default_loader, pil_loader, accimage_loader
 from torchvision.transforms import transforms
 import pandas as pd
-from transformers import AutoTokenizer
+# from transformers import AutoTokenizer
 
 
 def get_train_val_loaders_boolq(batch_size=64):
@@ -53,6 +56,69 @@ def get_train_val_loaders_cifar(val_size=2500, batch_size=64, dataset=torchvisio
     train_loader = DataLoader(train_ds, batch_size, shuffle=True, num_workers=4, pin_memory=True)
     # val_loader = DataLoader(val_ds, batch_size, shuffle=True, num_workers=4, pin_memory=True)
     return train_loader, None
+
+def get_train_loader_imagenet_subset(batch_size=256):
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225])
+
+    train_dataset = torchvision.datasets.ImageFolder(
+        "/media/tonio/p2/research/datasets/imagenet/ILSVRC/Data/CLS-LOC/train",
+        transforms.Compose([
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(
+                brightness=0.4,
+                contrast=0.4,
+                saturation=0.4,
+            ),
+            transforms.ToTensor(),
+            normalize,
+        ]))
+    class_to_idx = train_dataset.class_to_idx
+    idx = [i for i in range(len(train_dataset)) if train_dataset.imgs[i][1] < 200]
+    train_dataset = Subset(train_dataset, idx)
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=6)
+    return train_loader, class_to_idx
+
+
+def get_train_loader_imagenet(batch_size=256):
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225])
+
+    train_dataset = torchvision.datasets.ImageFolder(
+        "/media/tonio/p2/research/datasets/imagenet/ILSVRC/Data/CLS-LOC/train",
+        transforms.Compose([
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(
+                brightness=0.4,
+                contrast=0.4,
+                saturation=0.4,
+            ),
+            transforms.ToTensor(),
+            normalize,
+        ]))
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=6)
+    return train_loader, train_dataset.class_to_idx
+
+def get_val_loader_imagenet(class_to_idx, batch_size=256,subset=False):
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225])
+    transfs = transforms.Compose([
+        transforms.Resize(256),
+        transforms.RandomResizedCrop(224),
+        transforms.ToTensor(),
+        normalize])
+    val_dataset = ValidationImageNetDataset("/media/tonio/p2/research/datasets/imagenet/ILSVRC/Data/CLS-LOC/val",
+                                            "/media/tonio/p2/research/datasets/imagenet/ILSVRC/Annotations/CLS-LOC/val",
+                                            class_to_idx, transforms=transfs,subset=subset)
+
+
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset, batch_size=batch_size, shuffle=False)
+    return val_loader
 
 
 def get_test_loader_cifar(batch_size=64, dataset=torchvision.datasets.CIFAR10,resize=32):
@@ -153,7 +219,7 @@ class BoolQDataset(Dataset, ABC):
             self.path = "./data/BoolQ/BoolQ/val.jsonl"
         else:
             self.path = "./data/BoolQ/BoolQ/test.jsonl"
-        self.tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased", do_lower_case=True)
+        # self.tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased", do_lower_case=True)
         self.data = pd.read_json(self.path,lines=True, orient='records')
         passages = self.data.passage.values
         questions = self.data.question.values
@@ -184,7 +250,7 @@ class EntailmentDataset(Dataset, ABC):
                 self.path = path + "train.tsv"
             elif subset == 'val':
                 self.path = path + "dev.tsv"
-            self.tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased", do_lower_case=True)
+            # self.tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased", do_lower_case=True)
             self.data = pd.read_csv(self.path,sep='\t',lineterminator='\n', quoting=3)
             if 'QNLI' in path:
                 sentences1 = self.data.question.values
@@ -224,4 +290,39 @@ class EntailmentDataset(Dataset, ABC):
 
         def __len__(self):
             return len(self.encodings)
+
+
+class ValidationImageNetDataset(Dataset):
+    def __init__(self, image_folder, annotations_folder, class_to_idx, transforms, subset=True):
+        super(ValidationImageNetDataset, self).__init__()
+        images = os.listdir(image_folder)
+        self.image_folder = image_folder
+        self.annotations_folder = annotations_folder
+        self.labels = []
+        self.full_paths = []
+        for image in images:
+            image_name = image.split('.')[0]
+            annotations = os.path.join(annotations_folder, image_name+".xml")
+            with open(annotations, 'r') as f:
+                data = f.read()
+            bs_data = BeautifulSoup(data, "xml")
+            name_label = bs_data.find('name').contents[0]
+            if subset and class_to_idx[name_label] >=200:
+                continue
+            self.labels.append(class_to_idx[name_label])
+            self.full_paths.append(os.path.join(image_folder, image))
+        self.transforms = transforms
+
+    def __getitem__(self, index):
+        img = Image.open(self.full_paths[index])
+        if img.mode !='RGB':
+            img=img.convert('RGB')
+        if img is not None:
+            img = self.transforms(img)
+        label = self.labels[index]
+        return img, label
+
+    def __len__(self):
+        return len(self.labels)
+
 

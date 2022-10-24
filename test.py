@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+from tqdm import tqdm
 
 
 def test(model, device, test_loader):
@@ -8,7 +9,7 @@ def test(model, device, test_loader):
     correct = 0
     batch_num = 0.
     with torch.no_grad():
-        for data, target in test_loader:
+        for data, target in tqdm(test_loader):
             data, target = data.to(device), target.to(device)
             output = model(data)
             loss = F.cross_entropy(output, target)

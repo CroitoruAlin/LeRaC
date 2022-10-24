@@ -1,10 +1,12 @@
+from functools import partial
+
 import torchvision
 import yaml
 from torch import optim
 
 from data_handlers import get_train_val_loaders_cifar, get_test_loader_cifar, get_train_loader_tiny_imagenet, \
-    get_valid_loader_tiny_imagenet
-from models.cvt import ConvolutionalVisionTransformer
+    get_valid_loader_tiny_imagenet, get_train_loader_imagenet_subset, get_val_loader_imagenet
+from models.cvt import ConvolutionalVisionTransformer, get_cls_model, QuickGELU, LayerNorm
 from train.cvt_train import TrainerCvt
 
 
@@ -14,10 +16,18 @@ def build_cvt(args):
             data = (yaml.safe_load(stream))
         except Exception as exc:
             print(exc)
-    cvt = ConvolutionalVisionTransformer(spec=data["MODEL"]['SPEC'], num_classes=args.num_classes)
-    return cvt,data
+    cvt = ConvolutionalVisionTransformer(
+        in_chans=3,
+        num_classes=args.num_classes,
+        act_layer=QuickGELU,
+        norm_layer=partial(LayerNorm, eps=1e-5),
+        init=getattr(data["MODEL"]['SPEC'], 'INIT', 'trunc_norm'),
+        spec=data["MODEL"]['SPEC']
+    )
+    return cvt, data
 
-
+def add_optimizer_params_lr_baseline(trainer,args):
+    return None
 def add_optimizer_params_lr(trainer, args):
     stages = ['stage0', 'stage1', 'stage2']
     patch_embed = 'patch_embed'
@@ -54,6 +64,8 @@ def build_optimizer_cvt(model, args):
             list_params.append(param)
     return optim.Adamax(list_params, lr=args.initial_learning_rate * args.clf_lr)
 
+def build_optimizer_cvt_baseline(model,args):
+    return optim.Adamax(model.parameters(), lr=args.initial_learning_rate)
 
 def train_cifar10(args):
     args.num_classes = 10
@@ -114,3 +126,37 @@ def train_tiny_imagenet(args):
                                build_optimizer_cvt, configs)
     trainer.train()
 
+def train_imagenet_baseline(args):
+    args.num_classes = 200
+    args.scale_lr = 10
+    args.num_epochs = 150
+    args.initial_learning_rate = 0.002
+    args.scheduler = True
+    args.update_epoch = 1
+    args.update_per_epoch = 0
+    args.stop_update_epoch = 0
+    cvt, configs = build_cvt(args)
+    train_loader, class_to_idx = get_train_loader_imagenet_subset(batch_size=128)
+    val_loader = get_val_loader_imagenet(class_to_idx=class_to_idx, subset=True, batch_size=128)
+    trainer = TrainerCvt(cvt, train_loader, val_loader, add_optimizer_params_lr_baseline, args,
+                               build_optimizer_cvt_baseline, configs)
+    trainer.train()
+
+def train_imagenet(args):
+        args.num_classes = 200
+        args.update_epoch = 1
+        args.stop_update_epoch = 2
+        args.scale_lr = 10
+        args.num_epochs = 150
+        args.initial_learning_rate = 0.0002
+        args.min_lr = 2e-6
+        args.clf_lr = 1.
+        args.update_per_epoch = 4
+        args.stop_lr = 0.0021
+        args.scheduler = True
+        cvt, configs = build_cvt(args)
+        train_loader, class_to_idx = get_train_loader_imagenet_subset(batch_size=128)
+        val_loader = get_val_loader_imagenet(class_to_idx=class_to_idx, subset=True, batch_size=128)
+        trainer = TrainerCvt(cvt, train_loader, val_loader, add_optimizer_params_lr, args,
+                             build_optimizer_cvt, configs)
+        trainer.train()

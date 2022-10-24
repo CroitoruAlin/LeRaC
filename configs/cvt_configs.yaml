@@ -30,7 +30,7 @@ MODEL:
         sched: 'cosine'
         warmup_epochs: 0
         warmup_lr: 0.000001
-        min_lr: 0.00001
+        min_lr: 0.00005
         cooldown_epochs: 10
         decay_rate: 0.1
-        epochs: 200
+        epochs: 150

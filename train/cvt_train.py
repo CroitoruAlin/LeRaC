@@ -8,14 +8,15 @@ from train.resnet_train import Trainer
 
 
 class TrainerCvt(Trainer):
-    def __init__(self, model, train_loader, val_loader, add_optimizer_params_lr, args,build_optimizer, config):
-        super().__init__(model, train_loader, val_loader, add_optimizer_params_lr, args,build_optimizer)
+    def __init__(self, model, train_loader, val_loader, add_optimizer_params_lr, args, build_optimizer, config):
+        super().__init__(model, train_loader, val_loader, add_optimizer_params_lr, args, build_optimizer)
         attr_dict = AttrDict()
         config["MODEL"]["TRAIN"]["LR_SCHEDULER"]["ARGS"]['epochs'] = args.num_epochs
         attr_dict.update(config["MODEL"]["TRAIN"]["LR_SCHEDULER"]["ARGS"])
         config["MODEL"]["TRAIN"]["LR_SCHEDULER"]["ARGS"] = attr_dict
         self.lr_scheduler = None
         self.config=config
+        self.args = args
 
 
     def create_lr_scheduler(self, cfg, optimizer, begin_epoch):
@@ -66,7 +67,7 @@ class TrainerCvt(Trainer):
             test_acc = test(self.model, self.args.device, self.val_loader)
             if best_accuracy < test_acc:
                 best_accuracy = test_acc
-                torch.save(self.model.state_dict(), os.path.join( "saved_models", self.args.model_name + ".pth"))
+                torch.save(self.model.state_dict(), os.path.join( "saved_models", self.args.model_name + f"{epoch}.pth"))
                 print('New best accuracy. Model Saved!')
             if epoch % self.args.update_epoch == 0 and epoch < self.args.stop_update_epoch:
                 self.update_lr()
