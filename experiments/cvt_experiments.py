@@ -126,32 +126,16 @@ def train_tiny_imagenet(args):
                                build_optimizer_cvt, configs)
     trainer.train()
 
-def train_imagenet_baseline(args):
-    args.num_classes = 200
-    args.scale_lr = 10
-    args.num_epochs = 150
-    args.initial_learning_rate = 0.002
-    args.scheduler = True
-    args.update_epoch = 1
-    args.update_per_epoch = 0
-    args.stop_update_epoch = 0
-    cvt, configs = build_cvt(args)
-    train_loader, class_to_idx = get_train_loader_imagenet_subset(batch_size=128)
-    val_loader = get_val_loader_imagenet(class_to_idx=class_to_idx, subset=True, batch_size=128)
-    trainer = TrainerCvt(cvt, train_loader, val_loader, add_optimizer_params_lr_baseline, args,
-                               build_optimizer_cvt_baseline, configs)
-    trainer.train()
-
 def train_imagenet(args):
         args.num_classes = 200
         args.update_epoch = 1
-        args.stop_update_epoch = 2
+        args.stop_update_epoch = 5
         args.scale_lr = 10
         args.num_epochs = 150
-        args.initial_learning_rate = 0.0002
-        args.min_lr = 2e-6
+        args.initial_learning_rate = 0.002
+        args.min_lr = 2e-5
         args.clf_lr = 1.
-        args.update_per_epoch = 4
+        args.update_per_epoch = 2
         args.stop_lr = 0.0021
         args.scheduler = True
         cvt, configs = build_cvt(args)

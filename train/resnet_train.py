@@ -38,7 +38,7 @@ class Trainer:
                 self.args.decay_epoch += self.args.decay_step
             train_acc = self._train_epoch(epoch)
             # self.scheduler.step(train_acc)
-            if epoch%5==0:
+            if epoch % 1 == 0:
                 test_acc = test(self.model, self.args.device, self.val_loader)
                 if best_accuracy < test_acc:
                     best_accuracy = test_acc

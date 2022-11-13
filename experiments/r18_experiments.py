@@ -112,20 +112,6 @@ def train_tinyimagenet(args):
     trainer = Trainer(resnet18, train_loader, val_loader, add_optimizer_params_lr, args, build_optimizer_resnet)
     trainer.train()
 
-def train_imagenet_baseline(args):
-    args.num_classes = 200
-    args.decay_epoch = 31
-    args.decay_step = 30
-    args.stop_decay_epoch = 91
-    args.num_epochs = 120
-    args.initial_learning_rate=0.1
-    resnet18 = resnet_builder()
-    train_loader, class_to_idx = get_train_loader_imagenet_subset()
-    val_loader = get_val_loader_imagenet(class_to_idx=class_to_idx, subset=True)
-    trainer = TrainerBaseline(resnet18, train_loader, val_loader, args, build_optimizer_resnet_baseline)
-    trainer.train()
-
-
 def train_imagenet(args):
     args.num_classes = 125
     args.update_epoch = 1

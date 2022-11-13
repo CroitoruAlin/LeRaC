@@ -103,19 +103,6 @@ def train_tiny_imagenet(args):
     trainer = Trainer(wresnet, train_loader, val_loader, add_optimizer_params_lr, args, build_optimizer=build_optimizer_resnet)
     trainer.train()
 
-def train_imagenet_baseline(args):
-    args.num_classes = 200
-    args.decay_epoch = 1
-    args.decay_step = 30
-    args.initial_learning_rate = 1e-1
-    args.num_epochs = 90
-    args.stop_decay_epoch=62
-    wresnet = wide_resnet50_2()
-    wresnet.load_state_dict(torch.load("./saved_models/wresnet_epoch30.pth"))
-    train_loader, class_to_idx = get_train_loader_imagenet_subset()
-    val_loader = get_val_loader_imagenet(class_to_idx=class_to_idx, subset=True)
-    trainer = TrainerBaseline(wresnet, train_loader, val_loader, args, build_optimizer_resnet_baseline)
-    trainer.train()
 
 def train_imagenet(args):
     args.num_classes = 200
