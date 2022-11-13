@@ -14,6 +14,7 @@ be stored in a directory called "data":
       | CIFAR-10
       | CIFAR-100
       | tiny-imagenet-200
+      | imagenet
       | QNLIv2
       | BoolQ
       | RTE
