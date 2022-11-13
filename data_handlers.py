@@ -62,7 +62,7 @@ def get_train_loader_imagenet_subset(batch_size=256):
                                      std=[0.229, 0.224, 0.225])
 
     train_dataset = torchvision.datasets.ImageFolder(
-        "/media/tonio/p2/research/datasets/imagenet/ILSVRC/Data/CLS-LOC/train",
+        "./data/imagenet/ILSVRC/Data/CLS-LOC/train",
         transforms.Compose([
             transforms.RandomResizedCrop(224),
             transforms.RandomHorizontalFlip(),
@@ -111,8 +111,8 @@ def get_val_loader_imagenet(class_to_idx, batch_size=256,subset=False):
         transforms.RandomResizedCrop(224),
         transforms.ToTensor(),
         normalize])
-    val_dataset = ValidationImageNetDataset("/media/tonio/p2/research/datasets/imagenet/ILSVRC/Data/CLS-LOC/val",
-                                            "/media/tonio/p2/research/datasets/imagenet/ILSVRC/Annotations/CLS-LOC/val",
+    val_dataset = ValidationImageNetDataset("./data/imagenet/ILSVRC/Data/CLS-LOC/val",
+                                            "./data/imagenet/ILSVRC/Annotations/CLS-LOC/val",
                                             class_to_idx, transforms=transfs,subset=subset)
 
 
