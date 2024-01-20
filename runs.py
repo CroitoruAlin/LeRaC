@@ -6,22 +6,26 @@ RUNS = {
         'cifar100': r18_experiments.train_cifar100,
         'tinyimagenet': r18_experiments.train_tinyimagenet,
         'imagenet': r18_experiments.train_imagenet,
+        'food101': r18_experiments.train_food101,
     },
     'wresnet': {
         'cifar10': wrn_experiments.train_cifar10,
         'cifar100': wrn_experiments.train_cifar100,
         'tinyimagenet': wrn_experiments.train_tiny_imagenet,
         'imagenet': wrn_experiments.train_imagenet,
+        'food101': wrn_experiments.train_food101,
     },
     'cvt': {
         'cifar10': cvt_experiments.train_cifar10,
         'cifar100': cvt_experiments.train_cifar100,
         'tinyimagenet': cvt_experiments.train_tiny_imagenet,
         'imagenet': cvt_experiments.train_imagenet,
+        'food101': cvt_experiments.train_food101,
     },
     'cvt_pretrained': {
         'cifar10': cvt_pretrained_experiments.train_cifar10,
         'cifar100': cvt_pretrained_experiments.train_cifar100,
         'tinyimagenet': cvt_pretrained_experiments.train_tiny_imagenet,
+        'food101': cvt_pretrained_experiments.train_food101,
     },
 }

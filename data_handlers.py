@@ -119,6 +119,22 @@ def get_val_loader_imagenet(class_to_idx, batch_size=256,subset=False):
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=batch_size, shuffle=False)
     return val_loader
+def get_train_val_loaders_food101(batch_size=64, dataset=torchvision.datasets.Food101,resize=64):
+    transform = transforms.Compose([
+        transforms.Resize((resize,resize)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5,), (0.5, 0.5, 0.5,))]
+    )
+    train_data=dataset(root="./data", download=True, transform=transform, split="train")
+    #train_ds = Subset(train_data, indices[0: len(train_data)])
+    print(f'Train data size {len(train_data)}')
+    train_loader = DataLoader(train_data, batch_size, shuffle=True, num_workers=6, pin_memory=True)
+    return train_loader
+def get_test_loader_food101(batch_size=64, dataset=torchvision.datasets.Food101,resize=64):
+    test_changes = transforms.Compose([transforms.Resize((resize,resize)),transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5,), (0.5, 0.5, 0.5,))])
+    test_data = dataset(root='./data', split='test', download=True, transform=test_changes)
+    test_loader = DataLoader(test_data, batch_size, shuffle=False, num_workers=6, pin_memory=True)
+    return test_loader
 
 
 def get_test_loader_cifar(batch_size=64, dataset=torchvision.datasets.CIFAR10,resize=32):

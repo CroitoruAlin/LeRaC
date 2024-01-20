@@ -5,7 +5,8 @@ import yaml
 from torch import optim
 
 from data_handlers import get_train_val_loaders_cifar, get_test_loader_cifar, get_train_loader_tiny_imagenet, \
-    get_valid_loader_tiny_imagenet, get_train_loader_imagenet_subset, get_val_loader_imagenet
+    get_valid_loader_tiny_imagenet, get_train_loader_imagenet_subset, get_val_loader_imagenet, \
+    get_train_val_loaders_food101, get_test_loader_food101
 from models.cvt import ConvolutionalVisionTransformer, get_cls_model, QuickGELU, LayerNorm
 from train.cvt_train import TrainerCvt
 
@@ -144,3 +145,22 @@ def train_imagenet(args):
         trainer = TrainerCvt(cvt, train_loader, val_loader, add_optimizer_params_lr, args,
                              build_optimizer_cvt, configs)
         trainer.train()
+
+def train_food101(args):
+    args.num_classes = 101
+    args.update_epoch = 1
+    args.stop_update_epoch = 5
+    args.scale_lr = 10
+    args.num_epochs = 200
+    args.initial_learning_rate = 0.002
+    args.min_lr = 2e-6
+    args.clf_lr = 1e-2
+    args.update_per_epoch = 2
+    args.stop_lr = 0.0021
+    args.scheduler = True
+    cvt,configs = build_cvt(args)
+    train_loader = get_train_val_loaders_food101(dataset=torchvision.datasets.Food101, resize=128)
+    test_loader = get_test_loader_food101(dataset=torchvision.datasets.Food101, resize=128)
+
+    trainer = TrainerCvt(cvt, train_loader, test_loader, add_optimizer_params_lr, args,build_optimizer_cvt,configs)
+    trainer.train()
