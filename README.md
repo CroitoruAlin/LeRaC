@@ -5,7 +5,8 @@
 This repository contains the code that implements the experiments described in
 the work "Learning Rate Curriculum" accepted at the International Journal of Computer Vision. 
 
-## Citation 
+### Citation
+
 Please cite our work if you use any material released in this repository.
 ```
 @article{Croitoru-IJCV-2024,
