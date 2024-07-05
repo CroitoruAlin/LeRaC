@@ -1,4 +1,4 @@
-# LeRac
+# Learning Rate Curriculum (LeRaC) - IJCV 2024 (official repository)
 
 ### Introduction
 
