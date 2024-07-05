@@ -3,7 +3,18 @@
 ### Introduction
 
 This repository contains the code that implements the experiments described in
-LeRac: Learning Rate Curriculum. 
+the work "Learning Rate Curriculum" accepted at the International Journal of Computer Vision. 
+
+## Citation 
+Please cite our work if you use any material released in this repository.
+```
+@article{Croitoru-IJCV-2024,
+  author    = {Croitoru, Florinel-Alin and Ristea, Nicolae-Catalin and Ionescu, Radu Tudor and Sebe, Nicu},
+  title     = "{Learning Rate Curriculum}",
+  journal = {International Journal of Computer Vision},
+  year      = {2024},
+  }
+```
 
 ### Data
 The data sets (CIFAR-10, CIFAR-100, Tiny ImageNet, Qnli, BoolQ, RTE) should
